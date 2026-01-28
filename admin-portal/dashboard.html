@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - ICM LinkUp Admin</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="dashboard-wrapper">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <div class="sidebar-logo-icon"><img src="pictures/logo-icmlinkup.png" alt="logo-icmlinkup"></div>
+                    <div class="sidebar-logo-text">
+                        <h3>ICM LinkUp</h3>
+                        <p>Admin Portal</p>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="dashboard.html" class="nav-link active">
+                            <i>📊</i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="verify-alumni.html" class="nav-link">
+                            <i>✓</i>
+                            <span>Verify Alumni</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="users.html" class="nav-link">
+                            <i>👥</i>
+                            <span>All Users</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="inquiries.html" class="nav-link">
+                            <i>💬</i>
+                            <span>Inquiries</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button class="btn btn-secondary btn-block" id="logoutBtn">
+                    <i>🚪</i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Bar -->
+            <div class="top-bar">
+                <div class="page-title">
+                    <h1>Dashboard</h1>
+                </div>
+                <div class="top-bar-actions">
+                    <div class="user-info">
+                        <div class="user-avatar" id="userAvatar">A</div>
+                        <div class="user-details">
+                            <div class="user-name" id="userName">Loading...</div>
+                            <div class="user-role" id="userRole">Admin</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="content-area">
+                <!-- Statistics Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">
+                            <span>👥</span>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-label">Total Users</div>
+                            <div class="stat-value" id="totalUsers">-</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon green">
+                            <span>🎓</span>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-label">Verified Alumni</div>
+                            <div class="stat-value" id="verifiedAlumni">-</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon yellow">
+                            <span>⏳</span>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-label">Pending Verification</div>
+                            <div class="stat-value" id="pendingAlumni">-</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon purple">
+                            <span>💬</span>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-label">Total Inquiries</div>
+                            <div class="stat-value" id="totalInquiries">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Recent Alumni Registrations</h3>
+                        <a href="verify-alumni.html" class="btn btn-sm btn-primary">View All</a>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="table" id="recentAlumniTable">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Course</th>
+                                        <th>Graduation Year</th>
+                                        <th>Status</th>
+                                        <th>Registered</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recentAlumniBody">
+                                    <tr>
+                                        <td colspan="6" class="text-center">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Inquiries -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h3 class="card-title">Recent Inquiries</h3>
+                        <a href="inquiries.html" class="btn btn-sm btn-primary">View All</a>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="table" id="recentInquiriesTable">
+                                <thead>
+                                    <tr>
+                                        <th>Student</th>
+                                        <th>Alumni</th>
+                                        <th>Subject</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recentInquiriesBody">
+                                    <tr>
+                                        <td colspan="5" class="text-center">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Application Scripts -->
+    <script src="js/config.js" defer></script>
+    <script src="js/auth.js" defer></script>
+    <script src="js/dashboard.js" defer></script>
+</body>
+</html>
