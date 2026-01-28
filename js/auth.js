@@ -125,7 +125,7 @@ async verifyAdminRole(userId) {
             const { data, error } = await this.supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: redirectUrl
+                    redirectTo: window.location.origin + window.location.pathname.replace('/index.html', '')
                 }
             });
     
