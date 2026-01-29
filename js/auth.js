@@ -39,50 +39,54 @@ class AuthManager {
     }
 
     /**
- * Verify if user has admin role
- */
-async verifyAdminRole(userId) {
-    try {
-        // First ensure user exists
-        const { data: { user } } = await this.supabase.auth.getUser();
-        await this.ensureUserExists(user);
-        
-        // Check in admin_info table
-        const { data, error } = await this.supabase
-            .from('admin_info')
-            .select('*')
-            .eq('user_uid', userId)
-            .single();
+     * Verify if user has admin role
+     */
+    async verifyAdminRole(userId) {
+        try {
+            // First ensure user exists
+            const { data: { user } } = await this.supabase.auth.getUser();
+            await this.ensureUserExists(user);
+            
+            // Check role in users table
+            const { data: userRole, error: roleError } = await this.supabase
+                .from('users')
+                .select('role')
+                .eq('uid', userId)
+                .single();
+            
+            if (roleError) {
+                console.error('Role verification error:', roleError);
+                alert('Access denied. Admin privileges required.');
+                return false;
+            }
 
-        if (error) {
+            // Verify admin role
+            if (userRole.role !== 'admin' && userRole.role !== 'super_admin') {
+                alert('Access denied. Admin privileges required.');
+                return false;
+            }
+
+            // Get admin info
+            const { data: adminInfo } = await this.supabase
+                .from('admin_info')
+                .select('*')
+                .eq('user_uid', userId)
+                .single();
+            
+            // Store user info
+            this.currentUser = {
+                ...adminInfo,
+                email: user.email,
+                role: userRole.role
+            };
+            
+            return true;
+
+        } catch (error) {
             console.error('Role verification error:', error);
             return false;
         }
-
-        if (!data) {
-            alert('Access denied. Admin privileges required.');
-            return false;
-        }
-
-        // Store user info with email and get role from users table
-        const { data: userRole } = await this.supabase
-            .from('users')
-            .select('role')
-            .eq('uid', userId)
-            .single();
-        
-        this.currentUser = {
-            ...data,
-            email: user.email,
-            role: userRole?.role || 'admin' // Get role from users table
-        };
-        return true;
-
-    } catch (error) {
-        console.error('Role verification error:', error);
-        return false;
     }
-}
 
     /**
      * Login with email and password
@@ -118,10 +122,6 @@ async verifyAdminRole(userId) {
      */
     async loginWithGoogle() {
         try {
-            // Get the current directory path
-            const currentPath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
-            const redirectUrl = `${window.location.origin}${currentPath}/dashboard.html`;
-            
             const { data, error } = await this.supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
@@ -179,28 +179,48 @@ async verifyAdminRole(userId) {
             window.location.href = 'index.html';
         }
     }
-/**
+
+    /**
  * Create or update user in database after Google login
  */
 async ensureUserExists(authUser) {
     try {
-        // Check if user exists in admin_info
-        const { data: existingUser, error: fetchError } = await this.supabase
+        // Check if user exists in USERS table (main authentication table)
+        const { data: existingMainUser, error: mainFetchError } = await this.supabase
+            .from('users')
+            .select('*')
+            .eq('uid', authUser.id)
+            .single();
+
+        if (mainFetchError && mainFetchError.code !== 'PGRST116') {
+            throw mainFetchError;
+        }
+
+        // If user doesn't exist in users table, they need to be added by Super Admin
+        if (!existingMainUser) {
+            console.log('User not found in database');
+            throw new Error('Account not found. Please contact Super Admin to create your account.');
+        }
+
+        // Check if user exists in ADMIN_INFO table
+        const { data: existingAdminInfo, error: adminFetchError } = await this.supabase
             .from('admin_info')
             .select('*')
             .eq('user_uid', authUser.id)
             .single();
 
-        if (fetchError && fetchError.code !== 'PGRST116') {
-            throw fetchError;
+        if (adminFetchError && adminFetchError.code !== 'PGRST116') {
+            throw adminFetchError;
         }
 
-        // If user doesn't exist, create them
-        if (!existingUser) {
-            // Get staff_id from email (or generate one)
+        // If user doesn't exist in admin_info, create them
+        if (!existingAdminInfo) {
+            console.log('Creating admin info...');
+            
+            // Generate staff_id
             const staffId = 'ADMIN' + Date.now().toString().slice(-6);
             
-            const { error: insertError } = await this.supabase
+            const { error: insertAdminError } = await this.supabase
                 .from('admin_info')
                 .insert({
                     user_uid: authUser.id,
@@ -209,16 +229,29 @@ async ensureUserExists(authUser) {
                     department: 'IT Administration'
                 });
 
-            if (insertError) throw insertError;
-            console.log('New admin user created in admin_info');
+            if (insertAdminError) throw insertAdminError;
+            console.log('✅ New admin user created in admin_info');
         }
 
         return true;
+        
     } catch (error) {
         console.error('Error ensuring user exists:', error);
+        
+        // Show user-friendly error messages
+        if (error.message === 'Account not found. Please contact Super Admin to create your account.') {
+            alert('⚠️ Account not found. Please contact Super Admin to create your account.');
+        } else {
+            alert('❌ Failed to access user record. Please contact support.');
+        }
+        
+        // Sign out unauthorized user
+        await this.supabase.auth.signOut();
+        
         return false;
     }
 }
+
     /**
      * Get current user info
      */
