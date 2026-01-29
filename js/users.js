@@ -507,78 +507,79 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('addAdminModal').classList.add('hidden');
     };
 
+    /**
+     * Create new admin (Super Admin only)
+     */
     window.createAdmin = async function() {
-    const email = document.getElementById('adminEmail').value;
-    const fullName = document.getElementById('adminFullName').value;
-    const password = document.getElementById('adminPassword').value;
-
-    // Validate inputs
-    if (!email || !fullName || !password) {
-        showAddAdminAlert('Please fill all fields', 'error');
-        return;
-    }
-
-    if (password.length < 6) {
-        showAddAdminAlert('Password must be at least 6 characters', 'error');
-        return;
-    }
-
-    const createBtn = document.getElementById('createAdminBtn');
-    createBtn.disabled = true;
-    createBtn.textContent = 'Creating...';
-
-    try {
-        // NOTE: This requires Supabase Admin API or service role key
-        // For now, we'll just create the records directly
-        // In production, you should use Supabase Admin API to create auth users
-
-        // Generate a user ID (in real scenario, this would come from Supabase Auth)
-        const userId = 'manual-' + Date.now() + '-' + Math.random().toString(36).substring(7);
-
-        // Step 1: Insert into USERS table with role='admin'
-        const { error: userError } = await supabase
-            .from('users')
-            .insert({
-                uid: userId,
-                email: email,
-                role: 'admin', // ← AUTOMATICALLY SET TO ADMIN!
-                full_name: fullName,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            });
-
-        if (userError) throw userError;
-
-        // Step 2: Insert into ADMIN_INFO table
-        const { error: adminError } = await supabase
-            .from('admin_info')
-            .insert({
-                user_uid: userId,
-                staff_id: 'ADMIN' + Date.now().toString().slice(-6),
-                full_name: fullName,
-                department: 'IT Administration'
-            });
-
-        if (adminError) throw adminError;
-
-        showAddAdminAlert('Admin created successfully! They can now sign in with Google using: ' + email, 'success');
+        const email = document.getElementById('newAdminEmail').value.trim();
+        const password = document.getElementById('newAdminPassword').value;
+        const fullName = document.getElementById('newAdminName').value.trim();
+        const department = document.getElementById('newAdminDept').value.trim();
+        const role = document.getElementById('newAdminRole').value;
         
-        // Close modal and reload users
-        setTimeout(() => {
-            document.getElementById('addAdminModal').style.display = 'none';
-            if (typeof loadAllUsers === 'function') {
-                loadAllUsers();
-            }
-        }, 2000);
-
-    } catch (error) {
-        console.error('Error creating admin:', error);
-        showAddAdminAlert('Failed to create admin: ' + error.message, 'error');
-    } finally {
-        createBtn.disabled = false;
-        createBtn.textContent = 'Create Admin';
-    }
-}
+        // Validation
+        if (!email || !password || !fullName) {
+            showAddAdminAlert('Please fill in all required fields', 'error');
+            return;
+        }
+        
+        if (password.length < 6) {
+            showAddAdminAlert('Password must be at least 6 characters', 'error');
+            return;
+        }
+        
+        const createBtn = document.getElementById('createAdminBtn');
+        createBtn.disabled = true;
+        createBtn.textContent = 'Creating...';
+        
+        try {
+            // Note: This requires Supabase Admin API or service role key
+            // For now, we'll just create the records directly
+            // In production, you should use Supabase Admin API to create auth users
+            
+            // Generate a user ID (in real scenario, this would come from Supabase Auth)
+            const userId = 'manual-' + Date.now() + '-' + Math.random().toString(36).substring(7);
+            
+            // Insert into users table
+            const { error: userError } = await supabase
+                .from('users')
+                .insert({
+                    uid: userId,
+                    email: email,
+                    role: role,
+                    created_at: new Date().toISOString()
+                });
+            
+            if (userError) throw userError;
+            
+            // Insert into admin_info table
+            const staffId = 'ADMIN' + Date.now().toString().slice(-6);
+            const { error: adminError } = await supabase
+                .from('admin_info')
+                .insert({
+                    user_uid: userId,
+                    staff_id: staffId,
+                    full_name: fullName,
+                    department: department || 'IT Administration'
+                });
+            
+            if (adminError) throw adminError;
+            
+            showAddAdminAlert('Admin created successfully! Note: They need to use "Forgot Password" to set their password.', 'success');
+            
+            setTimeout(() => {
+                closeAddAdminModal();
+                loadUsers();
+                loadStatistics();
+            }, 2000);
+            
+        } catch (error) {
+            console.error('Error creating admin:', error);
+            showAddAdminAlert('Error: ' + error.message, 'error');
+            createBtn.disabled = false;
+            createBtn.textContent = 'Create Admin';
+        }
+    };
 
     /**
      * Show alert in Add Admin modal
